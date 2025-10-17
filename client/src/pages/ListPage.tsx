@@ -7,19 +7,30 @@ import { ItemCard } from "@/components/ItemCard";
 import { ItemDetailModal } from "@/components/ItemDetailModal";
 import { EditItemModal } from "@/components/EditItemModal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button"; // Button import is correct
-import { RefreshCw } from "lucide-react"; // RefreshCw import is correct
+import { Button } from "@/components/ui/button";
+import { RefreshCw, ExternalLink, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import type { Item, List, PriceHistory } from "@shared/schema";
 
 export default function ListPage() {
   const params = useParams<{ id: string }>();
-  const id = params.id; // Get list ID from URL
+  const id = params.id;
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [lensSheetOpen, setLensSheetOpen] = useState(false);
+  const [lensResults, setLensResults] = useState<any[]>([]);
+  const [lensLoading, setLensLoading] = useState(false);
   const { toast } = useToast();
 
   const { data: list } = useQuery<List>({
@@ -105,21 +116,34 @@ export default function ListPage() {
 
   const handleImageSearch = async (imageUrl: string) => {
     if (!selectedItem) return;
+    
+    setLensSheetOpen(true);
+    setLensLoading(true);
+    setLensResults([]);
+    
     try {
       const response = await fetch(
-        `/api/items/${selectedItem.id}/reverse-image`,
+        `/api/items/${selectedItem.id}/google-lens`,
         { method: "POST" },
       );
+      
       if (response.ok) {
-        const { searchUrl } = await response.json();
-        window.open(searchUrl, "_blank");
+        const { products } = await response.json();
+        setLensResults(products || []);
       } else {
-        throw new Error("API failed");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to search");
       }
-    } catch (error) {
-      console.error("Error with reverse image search:", error);
-      const fallbackUrl = `https://www.google.com/searchbyimage?image_url=${encodeURIComponent(imageUrl)}`;
-      window.open(fallbackUrl, "_blank");
+    } catch (error: any) {
+      console.error("Error with Google Lens search:", error);
+      toast({
+        title: "Search Failed",
+        description: error.message || "Failed to search with Google Lens. Please try again.",
+        variant: "destructive",
+      });
+      setLensSheetOpen(false);
+    } finally {
+      setLensLoading(false);
     }
   };
 
@@ -192,6 +216,59 @@ export default function ListPage() {
         onOpenChange={setEditModalOpen}
         onSave={(itemId, data) => updateMutation.mutateAsync({ itemId, data })}
       />
+
+      {/* Google Lens Results Sheet */}
+      <Sheet open={lensSheetOpen} onOpenChange={setLensSheetOpen}>
+        <SheetContent side="bottom" className="h-[80vh]">
+          <SheetHeader>
+            <SheetTitle>Similar Products Found</SheetTitle>
+            <SheetDescription>
+              Results from Google Lens analysis of your item
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="mt-6 overflow-y-auto h-[calc(80vh-120px)]">
+            {lensLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-3 text-muted-foreground">Searching with Google Lens...</p>
+              </div>
+            ) : lensResults.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No similar products found</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {lensResults.map((product, idx) => (
+                  <a
+                    key={idx}
+                    href={product.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block p-4 border rounded-lg hover:border-primary transition-colors"
+                    data-testid={`link-lens-result-${idx}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-2 mb-2">
+                          {product.name}
+                        </h3>
+                        <Badge variant="secondary" className="mb-2">
+                          {product.price}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {new URL(product.url).hostname}
+                        </p>
+                      </div>
+                      <ExternalLink className="h-4 w-4 flex-shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

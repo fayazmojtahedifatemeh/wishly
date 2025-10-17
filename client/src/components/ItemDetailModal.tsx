@@ -76,7 +76,7 @@ export function ItemDetailModal({
                   <img
                     src={images[currentImageIndex]}
                     alt={item.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                     data-testid="img-detail-main"
                   />
                 </div>

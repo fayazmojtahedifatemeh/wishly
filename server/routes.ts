@@ -224,10 +224,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const product = await scrapeProductFromUrl(record.url);
           
           let lists = ["all-items"];
-          if (record.category) {
+          if (record.category && record.category.trim()) {
             const allLists = await storage.getLists();
             const matchedList = allLists.find(
-              l => l.name.toLowerCase() === record.category.toLowerCase()
+              l => l.name.toLowerCase() === record.category!.toLowerCase()
             );
             if (matchedList) {
               lists = [matchedList.id];
@@ -427,8 +427,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Reverse image search
-  app.post("/api/items/:id/reverse-image", async (req, res) => {
+  // Google Lens search using Gemini Vision API
+  app.post("/api/items/:id/google-lens", async (req, res) => {
     try {
       const item = await storage.getItem(req.params.id);
       if (!item) {
@@ -440,10 +440,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No image available for this item" });
       }
 
-      const searchUrl = `https://www.google.com/searchbyimage?image_url=${encodeURIComponent(imageUrl)}`;
-      res.json({ searchUrl });
+      const imageResponse = await fetch(imageUrl);
+      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      
+      const products = await findProductsFromImage(imageBuffer);
+      res.json({ products });
     } catch (error: any) {
-      res.status(500).json({ error: "Failed to create reverse image search", details: error.message });
+      console.error("Error with Google Lens search:", error);
+      res.status(500).json({ error: "Failed to search with Google Lens", details: error.message });
     }
   });
 
