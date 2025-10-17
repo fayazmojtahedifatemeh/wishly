@@ -8,8 +8,9 @@ export interface ScrapedProduct {
   price: number; // in cents
   currency: string;
   availableSizes: string[];
+  availableColors?: string[];
+  inStock: boolean;
   description?: string;
-  // Note: This version might be missing availableColors and inStock
 }
 
 export async function scrapeProductFromUrl(
@@ -116,6 +117,21 @@ export async function scrapeProductFromUrl(
       }
     });
 
+    // Extract colors
+    const availableColors: string[] = [];
+    $(
+      'select[name*="color"] option, [class*="color"] button, [class*="color"] .option, [data-color]',
+    ).each((_, el) => {
+      const colorText = $(el).text().trim() || $(el).attr("value") || $(el).attr("data-color");
+      if (
+        colorText &&
+        colorText !== "Select Color" &&
+        !availableColors.includes(colorText)
+      ) {
+        availableColors.push(colorText);
+      }
+    });
+
     // Extract description (original guesses)
     const description =
       $('meta[name="description"]').attr("content") ||
@@ -130,12 +146,12 @@ export async function scrapeProductFromUrl(
       name: name || "Untitled Product",
       images:
         images.length > 0
-          ? [...new Set(images)]
+          ? Array.from(new Set(images))
           : ["https://via.placeholder.com/400"], // Added Set for uniqueness
       price: Math.round(price),
       currency,
-      availableSizes: [...new Set(availableSizes)], // Added Set for uniqueness
-      // availableColors: [], // Not present in original
+      availableSizes: Array.from(new Set(availableSizes)), // Added Set for uniqueness
+      availableColors: availableColors.length > 0 ? Array.from(new Set(availableColors)) : undefined,
       inStock,
       description,
     };

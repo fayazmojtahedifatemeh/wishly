@@ -2,13 +2,10 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Ensure API key is loaded correctly
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable is not set.");
-}
-
 // Use GoogleGenerativeAI for consistency
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = process.env.GEMINI_API_KEY 
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null;
 
 export interface CategorySuggestion {
   suggestedCategories: string[];
@@ -17,6 +14,9 @@ export interface CategorySuggestion {
 
 // --- findProductsFromImage function (This was mostly correct) ---
 export async function findProductsFromImage(imageBuffer: Buffer) {
+  if (!genAI) {
+    throw new Error("GEMINI_API_KEY is not configured. Please add it to enable image search.");
+  }
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" }); // Use the correct model name
 
@@ -69,6 +69,12 @@ export async function categorizeProduct(
   productName: string,
   productDescription?: string,
 ): Promise<CategorySuggestion> {
+  if (!genAI) {
+    return {
+      suggestedCategories: ["Extra Stuff"],
+      confidence: 0.5,
+    };
+  }
   try {
     const categories = [
       "Skirts",
