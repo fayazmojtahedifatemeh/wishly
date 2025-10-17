@@ -347,6 +347,178 @@
   }
 }
 
+/* Pastel Pink Theme */
+.pink {
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0, 0, 0, .03);
+  --elevate-2: rgba(0, 0, 0, .08);
+
+  --background: 340 45% 98%;
+  --foreground: 340 25% 20%;
+  --border: 340 25% 88%;
+  --card: 340 50% 99%;
+  --card-foreground: 340 22% 22%;
+  --card-border: 340 20% 92%;
+  --sidebar: 340 35% 96%;
+  --sidebar-foreground: 340 25% 24%;
+  --sidebar-border: 340 25% 90%;
+  --sidebar-primary: 340 70% 68%;
+  --sidebar-primary-foreground: 340 5% 98%;
+  --sidebar-accent: 340 20% 92%;
+  --sidebar-accent-foreground: 340 25% 26%;
+  --sidebar-ring: 340 70% 72%;
+  --popover: 340 30% 94%;
+  --popover-foreground: 340 22% 24%;
+  --popover-border: 340 20% 86%;
+  --primary: 340 70% 68%;
+  --primary-foreground: 340 5% 98%;
+  --secondary: 340 20% 90%;
+  --secondary-foreground: 340 25% 25%;
+  --muted: 340 18% 94%;
+  --muted-foreground: 340 15% 50%;
+  --accent: 340 25% 92%;
+  --accent-foreground: 340 22% 26%;
+  --destructive: 0 50% 70%;
+  --destructive-foreground: 0 5% 98%;
+  --input: 340 20% 75%;
+  --ring: 340 70% 72%;
+  --success: 140 40% 65%;
+  --success-foreground: 140 5% 98%;
+  --alert: 0 50% 70%;
+  --alert-foreground: 0 5% 98%;
+}
+
+/* Pastel Blue Theme */
+.blue {
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0, 0, 0, .03);
+  --elevate-2: rgba(0, 0, 0, .08);
+
+  --background: 210 40% 98%;
+  --foreground: 210 25% 20%;
+  --border: 210 22% 88%;
+  --card: 210 45% 99%;
+  --card-foreground: 210 22% 22%;
+  --card-border: 210 18% 92%;
+  --sidebar: 210 30% 96%;
+  --sidebar-foreground: 210 25% 24%;
+  --sidebar-border: 210 22% 90%;
+  --sidebar-primary: 210 70% 65%;
+  --sidebar-primary-foreground: 210 5% 98%;
+  --sidebar-accent: 210 18% 92%;
+  --sidebar-accent-foreground: 210 25% 26%;
+  --sidebar-ring: 210 70% 70%;
+  --popover: 210 28% 94%;
+  --popover-foreground: 210 22% 24%;
+  --popover-border: 210 18% 86%;
+  --primary: 210 70% 65%;
+  --primary-foreground: 210 5% 98%;
+  --secondary: 210 18% 90%;
+  --secondary-foreground: 210 25% 25%;
+  --muted: 210 16% 94%;
+  --muted-foreground: 210 14% 50%;
+  --accent: 210 20% 92%;
+  --accent-foreground: 210 22% 26%;
+  --destructive: 0 50% 70%;
+  --destructive-foreground: 0 5% 98%;
+  --input: 210 18% 75%;
+  --ring: 210 70% 70%;
+  --success: 140 40% 65%;
+  --success-foreground: 140 5% 98%;
+  --alert: 0 50% 70%;
+  --alert-foreground: 0 5% 98%;
+}
+
+/* Pastel Green Theme */
+.green {
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0, 0, 0, .03);
+  --elevate-2: rgba(0, 0, 0, .08);
+
+  --background: 160 35% 98%;
+  --foreground: 160 25% 20%;
+  --border: 160 20% 88%;
+  --card: 160 40% 99%;
+  --card-foreground: 160 22% 22%;
+  --card-border: 160 18% 92%;
+  --sidebar: 160 28% 96%;
+  --sidebar-foreground: 160 25% 24%;
+  --sidebar-border: 160 20% 90%;
+  --sidebar-primary: 160 60% 60%;
+  --sidebar-primary-foreground: 160 5% 98%;
+  --sidebar-accent: 160 18% 92%;
+  --sidebar-accent-foreground: 160 25% 26%;
+  --sidebar-ring: 160 60% 65%;
+  --popover: 160 26% 94%;
+  --popover-foreground: 160 22% 24%;
+  --popover-border: 160 18% 86%;
+  --primary: 160 60% 60%;
+  --primary-foreground: 160 5% 98%;
+  --secondary: 160 18% 90%;
+  --secondary-foreground: 160 25% 25%;
+  --muted: 160 16% 94%;
+  --muted-foreground: 160 14% 50%;
+  --accent: 160 20% 92%;
+  --accent-foreground: 160 22% 26%;
+  --destructive: 0 50% 70%;
+  --destructive-foreground: 0 5% 98%;
+  --input: 160 18% 75%;
+  --ring: 160 60% 65%;
+  --success: 140 40% 65%;
+  --success-foreground: 140 5% 98%;
+  --alert: 0 50% 70%;
+  --alert-foreground: 0 5% 98%;
+}
+
+/* Pastel Orange Theme */
+.orange {
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0, 0, 0, .03);
+  --elevate-2: rgba(0, 0, 0, .08);
+
+  --background: 30 45% 98%;
+  --foreground: 30 25% 20%;
+  --border: 30 22% 88%;
+  --card: 30 50% 99%;
+  --card-foreground: 30 22% 22%;
+  --card-border: 30 18% 92%;
+  --sidebar: 30 35% 96%;
+  --sidebar-foreground: 30 25% 24%;
+  --sidebar-border: 30 22% 90%;
+  --sidebar-primary: 30 75% 65%;
+  --sidebar-primary-foreground: 30 5% 98%;
+  --sidebar-accent: 30 18% 92%;
+  --sidebar-accent-foreground: 30 25% 26%;
+  --sidebar-ring: 30 75% 70%;
+  --popover: 30 28% 94%;
+  --popover-foreground: 30 22% 24%;
+  --popover-border: 30 18% 86%;
+  --primary: 30 75% 65%;
+  --primary-foreground: 30 5% 98%;
+  --secondary: 30 18% 90%;
+  --secondary-foreground: 30 25% 25%;
+  --muted: 30 16% 94%;
+  --muted-foreground: 30 14% 50%;
+  --accent: 30 20% 92%;
+  --accent-foreground: 30 22% 26%;
+  --destructive: 0 50% 70%;
+  --destructive-foreground: 0 5% 98%;
+  --input: 30 18% 75%;
+  --ring: 30 75% 70%;
+  --success: 140 40% 65%;
+  --success-foreground: 140 5% 98%;
+  --alert: 0 50% 70%;
+  --alert-foreground: 0 5% 98%;
+}
+
 /* This CSS rule tells the browser:
   When the app is in dark mode (has the 'dark' class),
   find any image with the 'sidebar-icon' class,
@@ -354,4 +526,39 @@
 */
 .dark .sidebar-icon {
   filter: invert(1);
+}
+
+/* Custom scrollbar styling for better UX */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.3);
+  border-radius: 6px;
+  margin: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.4);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.6);
+  background-clip: padding-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--primary) / 0.8);
+  background-clip: padding-box;
+}
+
+/* Firefox scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.4) hsl(var(--muted) / 0.3);
 }
