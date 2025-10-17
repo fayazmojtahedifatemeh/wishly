@@ -18,7 +18,7 @@ export async function findProductsFromImage(imageBuffer: Buffer) {
     throw new Error("GEMINI_API_KEY is not configured. Please add it to enable image search.");
   }
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const prompt = `
       Analyze this product image and find 5-8 online shopping links where this exact product or very similar products can be purchased.
@@ -122,7 +122,7 @@ Respond ONLY with valid JSON in this exact format:
 Only include categories from the provided list. The confidence should be a number between 0 and 1. Do not include any other text or markdown.`;
 
     // Use the same genAI instance
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Using 1.5-flash as default
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
