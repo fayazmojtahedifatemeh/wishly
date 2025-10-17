@@ -1,6 +1,6 @@
 // In file: client/src/pages/ListPage.tsx (REPLACE THE WHOLE FILE)
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ItemCard } from "@/components/ItemCard";
@@ -8,7 +8,7 @@ import { ItemDetailModal } from "@/components/ItemDetailModal";
 import { EditItemModal } from "@/components/EditItemModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, ExternalLink, Loader2 } from "lucide-react";
+import { RefreshCw, ExternalLink, Loader2, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -19,7 +19,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Item, List, PriceHistory } from "@shared/schema";
+
+type SortOption = "name-asc" | "name-desc" | "price-high" | "price-low" | "recent";
 
 export default function ListPage() {
   const params = useParams<{ id: string }>();
@@ -31,6 +40,7 @@ export default function ListPage() {
   const [lensSheetOpen, setLensSheetOpen] = useState(false);
   const [lensResults, setLensResults] = useState<any[]>([]);
   const [lensLoading, setLensLoading] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("recent");
   const { toast } = useToast();
 
   const { data: list } = useQuery<List>({
@@ -56,6 +66,27 @@ export default function ListPage() {
     const itemLists = Array.isArray(item.lists) ? item.lists : [];
     return id === "all" || itemLists.includes(id!);
   });
+
+  // Sort items based on selected option
+  const sortedItems = useMemo(() => {
+    const sorted = [...filteredItems];
+    
+    switch (sortBy) {
+      case "name-asc":
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case "name-desc":
+        return sorted.sort((a, b) => b.name.localeCompare(a.name));
+      case "price-high":
+        return sorted.sort((a, b) => b.price - a.price);
+      case "price-low":
+        return sorted.sort((a, b) => a.price - b.price);
+      case "recent":
+        // Most recently added first (assumes items are returned with newest first or have IDs that increment)
+        return sorted.reverse();
+      default:
+        return sorted;
+    }
+  }, [filteredItems, sortBy]);
 
   // --- Mutation for updating prices in THIS list ---
   const checkListPricesMutation = useMutation({
@@ -149,8 +180,8 @@ export default function ListPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section with Refresh Button */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Header Section with Sort and Refresh */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-1">
             {list?.name || "All Items"}
@@ -160,17 +191,33 @@ export default function ListPage() {
             {filteredItems.length === 1 ? "item" : "items"}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => checkListPricesMutation.mutate()}
-          disabled={checkListPricesMutation.isPending}
-          title={`Refresh prices in ${list?.name || "this list"}`}
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${checkListPricesMutation.isPending ? "animate-spin" : ""}`}
-          />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+            <SelectTrigger className="w-[180px]" data-testid="select-sort">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent" data-testid="option-sort-recent">Most Recent</SelectItem>
+              <SelectItem value="name-asc" data-testid="option-sort-name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc" data-testid="option-sort-name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="price-high" data-testid="option-sort-price-high">Price (High-Low)</SelectItem>
+              <SelectItem value="price-low" data-testid="option-sort-price-low">Price (Low-High)</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => checkListPricesMutation.mutate()}
+            disabled={checkListPricesMutation.isPending}
+            title={`Refresh prices in ${list?.name || "this list"}`}
+            data-testid="button-refresh-prices"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${checkListPricesMutation.isPending ? "animate-spin" : ""}`}
+            />
+          </Button>
+        </div>
       </div>
 
       {/* Item Grid or Loading/Empty State */}
@@ -180,7 +227,7 @@ export default function ListPage() {
             <Skeleton key={i} className="aspect-[3/4] w-full" />
           ))}
         </div>
-      ) : filteredItems.length === 0 ? (
+      ) : sortedItems.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">
             No items in this list yet. Add some items to get started!
@@ -188,7 +235,7 @@ export default function ListPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredItems.map((item) => (
+          {sortedItems.map((item) => (
             <ItemCard
               key={item.id}
               item={item}

@@ -191,7 +191,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No image file provided" });
       }
 
-      const products = await findProductsFromImage(req.file.buffer);
+      const mimeType = req.file.mimetype || "image/jpeg";
+      const products = await findProductsFromImage(req.file.buffer, mimeType);
       res.json({ products });
     } catch (error: any) {
       console.error("Error analyzing image:", error);
@@ -230,6 +231,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const product = await scrapeProductFromUrl(record.url);
             
             let lists = ["all-items"];
+            
+            // Try to match category from CSV first
             if (record.category && record.category.trim()) {
               const allLists = await storage.getLists();
               const matchedList = allLists.find(
@@ -237,6 +240,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
               );
               if (matchedList) {
                 lists = [matchedList.id];
+              } else {
+                // Category specified but no match - try AI categorization
+                try {
+                  const categorization = await categorizeProduct(product.name, product.description);
+                  const suggestedLists = allLists
+                    .filter(list => categorization.suggestedCategories.includes(list.name))
+                    .map(list => list.id);
+                  if (suggestedLists.length > 0) {
+                    lists = suggestedLists;
+                  }
+                } catch (error) {
+                  console.error("AI categorization failed during CSV import:", error);
+                }
+              }
+            } else {
+              // No category specified - use AI categorization
+              try {
+                const allLists = await storage.getLists();
+                const categorization = await categorizeProduct(product.name, product.description);
+                const suggestedLists = allLists
+                  .filter(list => categorization.suggestedCategories.includes(list.name))
+                  .map(list => list.id);
+                if (suggestedLists.length > 0) {
+                  lists = suggestedLists;
+                }
+              } catch (error) {
+                console.error("AI categorization failed during CSV import:", error);
               }
             }
 
@@ -460,7 +490,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const imageResponse = await fetch(imageUrl);
       const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
       
-      const products = await findProductsFromImage(imageBuffer);
+      // Try to detect MIME type from URL or response headers
+      const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
+      const products = await findProductsFromImage(imageBuffer, contentType);
       res.json({ products });
     } catch (error: any) {
       console.error("Error with Google Lens search:", error);

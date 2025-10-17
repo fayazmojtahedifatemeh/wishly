@@ -13,32 +13,37 @@ export interface CategorySuggestion {
 }
 
 // --- findProductsFromImage function (This was mostly correct) ---
-export async function findProductsFromImage(imageBuffer: Buffer) {
+export async function findProductsFromImage(imageBuffer: Buffer, mimeType: string = "image/jpeg") {
   if (!genAI) {
     throw new Error("GEMINI_API_KEY is not configured. Please add it to enable image search.");
   }
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `
-      Analyze this product image and find 5-8 online shopping links where this exact product or very similar products can be purchased.
-      Focus on finding the actual product from major retailers and shopping sites.
-      
-      Return ONLY a valid JSON array of objects. Each object must have these exact keys: "name", "price", and "url".
-      
-      Example format:
-      [
-        {"name": "Green Wool Coat", "price": "$129.99", "url": "https://example.com/product"},
-        {"name": "Similar Wool Coat", "price": "$149.00", "url": "https://store.com/item"}
-      ]
-      
-      Do not include any text, markdown formatting, or explanations. Respond ONLY with the JSON array.
-    `;
+    const prompt = `You are a product search expert. Analyze this image and identify the product shown.
+    
+Your task:
+1. Identify what type of product this is (clothing, shoes, electronics, etc.)
+2. Describe the key features (color, style, brand if visible, etc.)
+3. Find 5-8 real online shopping links where this exact product or very similar items can be purchased
+4. Include links from major retailers like Zara, H&M, ASOS, Amazon, Etsy, Net-a-Porter, TheOutnet, Nordstrom, etc.
+
+Return ONLY valid JSON in this exact format (no markdown, no explanations):
+[
+  {"name": "Product Name at Retailer", "price": "$XX.XX", "url": "https://retailer.com/product"},
+  {"name": "Similar Product Name", "price": "$XX.XX", "url": "https://store.com/item"}
+]
+
+Important:
+- Each product MUST have a real, working URL
+- Include the actual price or "Price varies" if unknown
+- Name should include the retailer and product description
+- Return 5-8 results minimum`;
 
     const imagePart = {
       inlineData: {
         data: imageBuffer.toString("base64"),
-        mimeType: "image/jpeg", // Consider handling other types like png if needed
+        mimeType: mimeType,
       },
     };
 
@@ -106,20 +111,32 @@ export async function categorizeProduct(
       "Shirts and Blouses",
     ];
 
-    const prompt = `Given this product: "${productName}"${
-      productDescription ? ` - Description: ${productDescription}` : ""
+    const prompt = `You are a product categorization expert for an e-commerce wishlist application.
+
+Product to categorize: "${productName}"${
+      productDescription ? `
+Product description: ${productDescription}` : ""
     }
 
-Categorize this product into ONE or MORE of these categories (choose the most relevant ones):
-${categories.join(", ")}
+Available categories:
+${categories.map((cat, idx) => `${idx + 1}. ${cat}`).join("\n")}
 
-Respond ONLY with valid JSON in this exact format:
+Instructions:
+1. Analyze the product name and description carefully
+2. Select 1-3 most relevant categories from the list above
+3. Be specific - choose the most precise categories that match
+4. For clothing, consider the specific type (e.g., "Dresses" not "Extra Stuff")
+5. For beauty products, use "Makeup", "Nails", or "Perfumes" specifically
+6. Only use "Extra Stuff" if truly no other category fits
+7. Assign high confidence (0.8-1.0) for clear matches, lower (0.5-0.7) for uncertain ones
+
+Respond ONLY with valid JSON (no markdown, no explanations):
 {
-  "suggestedCategories": ["Category1", "Category2"],
+  "suggestedCategories": ["Category1"],
   "confidence": 0.95
 }
 
-Only include categories from the provided list. The confidence should be a number between 0 and 1. Do not include any other text or markdown.`;
+The categories MUST be exactly from the list above.`;
 
     // Use the same genAI instance
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
