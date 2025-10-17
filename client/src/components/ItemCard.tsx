@@ -1,3 +1,5 @@
+// In file: client/src/components/ItemCard.tsx (REPLACE THE WHOLE FILE)
+
 import { useState } from "react";
 import { ExternalLink, MoreVertical } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -22,17 +24,30 @@ export function ItemCard({ item, onEdit, onDelete, onClick }: ItemCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = Array.isArray(item.images) ? item.images : [];
 
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
+  // --- NEW, SMARTER CURRENCY FORMATTER ---
+  const formatCurrency = (amountInCents: number, currency: string) => {
+    const options: Intl.NumberFormatOptions = {
+      style: "currency",
       currency: currency,
-    }).format(amount / 100);
+    };
+
+    // If the price is a whole number (e.g., 193400 cents),
+    // then format it without any decimal places.
+    if (amountInCents % 100 === 0) {
+      options.minimumFractionDigits = 0;
+      options.maximumFractionDigits = 0;
+    }
+    // Otherwise, it will default to 2 decimal places (e.g., for 15695 cents -> €156.95)
+
+    // Using 'de-DE' locale helps format European currencies correctly (e.g., using a comma)
+    // but we can stick to 'en-US' for consistency if you prefer.
+    return new Intl.NumberFormat("en-US", options).format(amountInCents / 100);
   };
 
   return (
     <Card
       className={`group overflow-hidden hover-elevate transition-all duration-200 cursor-pointer ${
-        !item.inStock ? 'opacity-60' : ''
+        !item.inStock ? "opacity-60" : ""
       }`}
       onClick={() => onClick(item)}
       data-testid={`card-item-${item.id}`}
@@ -58,9 +73,7 @@ export function ItemCard({ item, onEdit, onDelete, onClick }: ItemCardProps) {
                       setCurrentImageIndex(idx);
                     }}
                     className={`w-1.5 h-1.5 rounded-full transition-all ${
-                      idx === currentImageIndex
-                        ? "bg-white w-4"
-                        : "bg-white/60"
+                      idx === currentImageIndex ? "bg-white w-4" : "bg-white/60"
                     }`}
                     data-testid={`button-image-dot-${item.id}-${idx}`}
                   />
@@ -69,9 +82,12 @@ export function ItemCard({ item, onEdit, onDelete, onClick }: ItemCardProps) {
             )}
           </>
         )}
-        
+
         {/* Quick Actions */}
-        <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="absolute top-2 right-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -96,7 +112,7 @@ export function ItemCard({ item, onEdit, onDelete, onClick }: ItemCardProps) {
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
-                  window.open(item.url, '_blank');
+                  window.open(item.url, "_blank");
                 }}
                 data-testid={`button-open-link-${item.id}`}
               >
@@ -120,7 +136,11 @@ export function ItemCard({ item, onEdit, onDelete, onClick }: ItemCardProps) {
         {/* Stock Status */}
         {!item.inStock && (
           <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center">
-            <Badge variant="secondary" className="text-sm" data-testid={`badge-out-of-stock-${item.id}`}>
+            <Badge
+              variant="secondary"
+              className="text-sm"
+              data-testid={`badge-out-of-stock-${item.id}`}
+            >
               Out of Stock
             </Badge>
           </div>
@@ -129,16 +149,26 @@ export function ItemCard({ item, onEdit, onDelete, onClick }: ItemCardProps) {
 
       {/* Content */}
       <div className="p-4 space-y-2">
-        <h3 className="font-medium text-sm line-clamp-2" data-testid={`text-item-name-${item.id}`}>
+        <h3
+          className="font-medium text-sm line-clamp-2"
+          data-testid={`text-item-name-${item.id}`}
+        >
           {item.name}
         </h3>
-        
+
         <div className="flex items-center justify-between gap-2">
-          <p className="text-lg font-mono font-semibold text-primary" data-testid={`text-item-price-${item.id}`}>
+          <p
+            className="text-lg font-mono font-semibold text-primary"
+            data-testid={`text-item-price-${item.id}`}
+          >
             {formatCurrency(item.price, item.currency)}
           </p>
           {item.size && (
-            <Badge variant="outline" className="text-xs" data-testid={`badge-size-${item.id}`}>
+            <Badge
+              variant="outline"
+              className="text-xs"
+              data-testid={`badge-size-${item.id}`}
+            >
               {item.size}
             </Badge>
           )}

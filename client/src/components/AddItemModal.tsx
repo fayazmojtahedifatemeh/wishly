@@ -1,8 +1,10 @@
+// In file: client/src/components/AddItemModal.tsx
+
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, ExternalLink, Sparkles, Camera } from "lucide-react";
+import { Loader2, Sparkles, Camera, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import type { List } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast"; // --- ADDED: For error pop-ups ---
 
 const formSchema = z.object({
   url: z.string().url("Please enter a valid URL"),
@@ -43,6 +46,12 @@ interface ProductPreview {
   currency: string;
   availableSizes: string[];
   suggestedLists: string[];
+}
+
+interface ImageSearchResult {
+  name: string;
+  price: string;
+  url: string;
 }
 
 interface AddItemModalProps {
@@ -68,8 +77,11 @@ export function AddItemModal({
   const [selectedSize, setSelectedSize] = useState<string>();
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [imageDescription, setImageDescription] = useState<string>("");
+  const [imageSearchResults, setImageSearchResults] = useState<
+    ImageSearchResult[]
+  >([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast(); // --- ADDED: For error pop-ups ---
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -78,34 +90,48 @@ export function AddItemModal({
     },
   });
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // --- UPGRADED with error handling ---
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsAnalyzing(true);
+    setImageSearchResults([]);
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append("image", file);
 
     try {
-      const response = await fetch('/api/items/analyze-image', {
-        method: 'POST',
+      const response = await fetch("/api/items/analyze-image", {
+        method: "POST",
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Failed to analyze image');
-      
+      if (!response.ok) {
+        // This will grab the error message from the server and show it
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to analyze image");
+      }
+
       const data = await response.json();
-      
-      // Show the description to the user so they can search for it manually
-      setImageDescription(data.description);
-      
-    } catch (error) {
+      if (!data.products || data.products.length === 0) {
+        throw new Error("AI could not find any products for this image.");
+      }
+
+      setImageSearchResults(data.products);
+    } catch (error: any) {
+      // --- ADDED: This will show the error in a pop-up ---
+      toast({
+        title: "Image Search Failed",
+        description: error.message || "An unknown error occurred.",
+        variant: "destructive",
+      });
       console.error("Error analyzing image:", error);
-      setImageDescription("Failed to analyze image. Please try again.");
     } finally {
       setIsAnalyzing(false);
       if (imageInputRef.current) {
-        imageInputRef.current.value = '';
+        imageInputRef.current.value = "";
       }
     }
   };
@@ -118,16 +144,22 @@ export function AddItemModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: values.url }),
       });
-      
+
       if (!response.ok) throw new Error("Failed to fetch product");
-      
+
       const data: ProductPreview = await response.json();
       setPreview(data);
       setSelectedLists(data.suggestedLists);
       if (data.availableSizes.length > 0) {
         setSelectedSize(data.availableSizes[0]);
       }
-    } catch (error) {
+    } catch (error: any) {
+      toast({
+        // --- ADDED: Error handling for URL fetching ---
+        title: "Fetch Failed",
+        description: error.message || "Could not fetch details for this URL.",
+        variant: "destructive",
+      });
       console.error("Error fetching product:", error);
     } finally {
       setIsLoading(false);
@@ -136,7 +168,7 @@ export function AddItemModal({
 
   const handleAddItem = async () => {
     if (!preview) return;
-    
+
     setIsLoading(true);
     try {
       await onAddItem({
@@ -144,7 +176,7 @@ export function AddItemModal({
         selectedSize,
         selectedLists,
       });
-      
+
       // Reset form
       form.reset();
       setPreview(null);
@@ -152,7 +184,13 @@ export function AddItemModal({
       setSelectedSize(undefined);
       setCurrentImageIndex(0);
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      toast({
+        // --- ADDED: Error handling for item add ---
+        title: "Error Adding Item",
+        description: error.message || "An unknown error occurred.",
+        variant: "destructive",
+      });
       console.error("Error adding item:", error);
     } finally {
       setIsLoading(false);
@@ -161,11 +199,14 @@ export function AddItemModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="modal-add-item">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        data-testid="modal-add-item"
+      >
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
           <DialogDescription>
-            Enter the product URL to fetch details and add to your wishlist
+            Enter the product URL or search by image to add to your wishlist
           </DialogDescription>
         </DialogHeader>
 
@@ -210,23 +251,55 @@ export function AddItemModal({
                       </div>
                     </FormControl>
                     <FormMessage />
-                    {imageDescription && (
-                      <div className="mt-2 p-3 bg-muted rounded-md">
-                        <p className="text-sm font-medium mb-1">Image Analysis Result:</p>
-                        <p className="text-sm text-muted-foreground">{imageDescription}</p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Use this description to search for similar products online, then paste the product URL above.
+
+                    {/* This block displays the search results */}
+                    {imageSearchResults.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        <p className="text-sm font-medium">
+                          Image Search Results:
                         </p>
+                        <div className="max-h-60 overflow-y-auto space-y-2 rounded-md border p-2">
+                          {imageSearchResults.map((product, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between gap-2 p-2 rounded-md hover:bg-muted"
+                            >
+                              <div className="flex-1 overflow-hidden">
+                                <p
+                                  className="text-sm font-medium truncate"
+                                  title={product.name}
+                                >
+                                  {product.name}
+                                </p>
+                                <p className="text-sm text-primary">
+                                  {product.price}
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  form.setValue("url", product.url);
+                                  setImageSearchResults([]);
+                                }}
+                                title="Use this URL"
+                              >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </FormItem>
                 )}
               />
-              <Button 
-                type="button" 
-                onClick={form.handleSubmit(handleFetchProduct)} 
-                disabled={isLoading} 
-                className="w-full" 
+              <Button
+                type="button"
+                onClick={form.handleSubmit(handleFetchProduct)}
+                disabled={isLoading}
+                className="w-full"
                 data-testid="button-fetch-product"
               >
                 {isLoading ? (
@@ -269,10 +342,18 @@ export function AddItemModal({
             {/* Product Details */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-lg mb-1" data-testid="text-product-name">{preview.name}</h3>
-                <p className="text-2xl font-mono font-semibold text-primary" data-testid="text-product-price">
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
+                <h3
+                  className="font-semibold text-lg mb-1"
+                  data-testid="text-product-name"
+                >
+                  {preview.name}
+                </h3>
+                <p
+                  className="text-2xl font-mono font-semibold text-primary"
+                  data-testid="text-product-price"
+                >
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
                     currency: preview.currency,
                   }).format(preview.price / 100)}
                 </p>
@@ -288,7 +369,11 @@ export function AddItemModal({
                     </SelectTrigger>
                     <SelectContent>
                       {preview.availableSizes.map((size) => (
-                        <SelectItem key={size} value={size} data-testid={`option-size-${size}`}>
+                        <SelectItem
+                          key={size}
+                          value={size}
+                          data-testid={`option-size-${size}`}
+                        >
                           {size}
                         </SelectItem>
                       ))}
@@ -316,7 +401,7 @@ export function AddItemModal({
                           setSelectedLists(
                             checked
                               ? [...selectedLists, list.id]
-                              : selectedLists.filter((id) => id !== list.id)
+                              : selectedLists.filter((id) => id !== list.id),
                           );
                         }}
                         data-testid={`checkbox-list-${list.id}`}

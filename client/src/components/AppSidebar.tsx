@@ -1,23 +1,18 @@
+// In file: client/src/components/AppSidebar.tsx
+
 import {
   Home,
   ListTodo,
   Target,
   Plus,
   Shirt,
-  ShoppingBag,
-  Utensils,
   Smartphone,
   Home as HomeIcon,
-  Sparkles,
-  Watch,
-  Palette,
-  Scissors,
-  ShoppingCart,
-  Briefcase,
-  Dumbbell,
-  Wind,
   Gem,
   Package,
+  Dumbbell,
+  Watch,
+  Utensils,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -42,34 +37,43 @@ interface AppSidebarProps {
 }
 
 const getIconForList = (name: string, icon?: string) => {
+  // --- UPDATED: Make sure all paths start with a / ---
   const customIconMap: Record<string, string> = {
-    'Sweaters & Cardigans': '/attached_assets/sweater_1760701841052.png',
-    'Perfumes': '/attached_assets/bottle_1760701841053.png',
-    'Skirts': '/attached_assets/skirt_1760701841053.png',
-    'Shoes': '/attached_assets/high-heels_1760701841053.png',
-    'Shirts and Blouses': '/attached_assets/blouse_1760701841053.png',
-    'Nails': '/attached_assets/nail_1760701841053.png',
-    'Pants': '/attached_assets/trousers_1760701841053.png',
-    'Makeup': '/attached_assets/makeup_1760701841054.png',
-    'Dresses': '/attached_assets/dress_1760701841054.png',
-    'Blazers': '/attached_assets/blazer_1760701841054.png',
-    'Bags': '/attached_assets/handbag_1760701841054.png',
-    'Coats': '/attached_assets/trench-coat_1760701841055.png',
+    "Sweaters & Cardigans": "/attached_assets/sweater_1760701841052.png",
+    Perfumes: "/attached_assets/bottle_1760701841053.png",
+    Skirts: "/attached_assets/skirt_1760701841053.png",
+    Shoes: "/attached_assets/high-heels_1760701841053.png",
+    "Shirts and Blouses": "/attached_assets/blouse_1760701841053.png",
+    Nails: "/attached_assets/nail_1760701841053.png",
+    Pants: "/attached_assets/trousers_1760701841053.png",
+    Makeup: "/attached_assets/makeup_1760701841054.png",
+    Dresses: "/attached_assets/dress_1760701841054.png",
+    Blazers: "/attached_assets/blazer_1760701841054.png",
+    Bags: "/attached_assets/handbag_1760701841054.png",
+    Coats: "/attached_assets/trench-coat_1760701841055.png",
   };
 
   const lucideIconMap: Record<string, any> = {
-    'All Items': ListTodo,
-    'Electronics': Smartphone,
-    'Food': Utensils,
-    'House Things': HomeIcon,
-    'Extra Stuff': Package,
-    'Jewelry': Gem,
-    'Tops': Shirt,
-    'Gym': Dumbbell,
-    'Accessories': Watch,
+    "All Items": ListTodo,
+    Electronics: Smartphone,
+    Food: Utensils,
+    "House Things": HomeIcon,
+    "Extra Stuff": Package,
+    Jewelry: Gem,
+    Tops: Shirt,
+    Gym: Dumbbell,
+    Accessories: Watch,
   };
 
-  return { customIcon: customIconMap[name], LucideIcon: lucideIconMap[name] || ListTodo };
+  // Ensure all paths start with a /
+  if (customIconMap[name] && !customIconMap[name].startsWith("/")) {
+    customIconMap[name] = "/" + customIconMap[name];
+  }
+
+  return {
+    customIcon: customIconMap[name],
+    LucideIcon: lucideIconMap[name] || ListTodo,
+  };
 };
 
 export function AppSidebar({ lists, itemCounts, onAddList }: AppSidebarProps) {
@@ -88,7 +92,11 @@ export function AppSidebar({ lists, itemCounts, onAddList }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location === "/"} data-testid="link-activity">
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/"}
+                  data-testid="link-activity"
+                >
                   <Link href="/">
                     <Home className="h-4 w-4" />
                     <span>Activity</span>
@@ -96,7 +104,11 @@ export function AppSidebar({ lists, itemCounts, onAddList }: AppSidebarProps) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location === "/goals"} data-testid="link-goals">
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/goals"}
+                  data-testid="link-goals"
+                >
                   <Link href="/goals">
                     <Target className="h-4 w-4" />
                     <span>Goals</span>
@@ -112,16 +124,28 @@ export function AppSidebar({ lists, itemCounts, onAddList }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {lists.map((list) => {
-                const { customIcon, LucideIcon } = getIconForList(list.name, list.icon);
+                const { customIcon, LucideIcon } = getIconForList(
+                  list.name,
+                  list.icon,
+                );
                 const count = itemCounts[list.id] || 0;
                 const isActive = location === `/lists/${list.id}`;
 
                 return (
                   <SidebarMenuItem key={list.id}>
-                    <SidebarMenuButton asChild isActive={isActive} data-testid={`link-list-${list.id}`}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      data-testid={`link-list-${list.id}`}
+                    >
                       <Link href={`/lists/${list.id}`}>
                         {customIcon ? (
-                          <img src={customIcon} alt={list.name} className="h-4 w-4" />
+                          // --- ADDED: className for dark mode ---
+                          <img
+                            src={customIcon}
+                            alt={list.name}
+                            className="h-4 w-4 sidebar-icon"
+                          />
                         ) : (
                           <LucideIcon className="h-4 w-4" />
                         )}
