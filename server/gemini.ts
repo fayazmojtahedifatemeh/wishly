@@ -13,6 +13,37 @@ export interface CategorySuggestion {
   confidence: number;
 }
 
+export async function analyzeProductImage(imageBuffer: Buffer): Promise<string> {
+  try {
+    const base64Image = imageBuffer.toString('base64');
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: base64Image
+              }
+            },
+            {
+              text: "Analyze this image and describe the clothing or accessory item in detail. Include: type of item (dress, shoes, bag, etc.), color, style, material if visible, and any distinguishing features. Format as a brief product search query."
+            }
+          ]
+        }
+      ]
+    });
+
+    return response.text || "clothing item";
+  } catch (error) {
+    console.error("Error analyzing image:", error);
+    return "clothing item";
+  }
+}
+
 export async function categorizeProduct(
   productName: string,
   productDescription?: string

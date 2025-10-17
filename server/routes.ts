@@ -1,10 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { categorizeProduct } from "./gemini";
+import { categorizeProduct, analyzeProductImage } from "./gemini";
 import { scrapeProductFromUrl } from "./scraper";
 import { z } from "zod";
 import cron from "node-cron";
+import multer from "multer";
+import { parse } from "csv-parse/sync";
 
 // Validation schemas
 const previewItemSchema = z.object({
@@ -31,6 +33,9 @@ const createGoalSchema = z.object({
   targetAmount: z.number().int().positive(),
   deadline: z.string().optional(),
 });
+
+// Configure multer for CSV uploads
+const upload = multer({ storage: multer.memoryStorage() });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Items Routes
@@ -143,6 +148,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting item:", error);
       res.status(500).json({ error: "Failed to delete item" });
+    }
+  });
+
+  // Image Analysis Route
+  app.post("/api/items/analyze-image", upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image uploaded" });
+      }
+
+      const description = await analyzeProductImage(req.file.buffer);
+      res.json({ description });
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      res.status(500).json({ error: "Failed to analyze image" });
+    }
+  });
+
+  // CSV Import Route
+  app.post("/api/items/import-csv", upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const csvData = req.file.buffer.toString('utf-8');
+      const records = parse(csvData, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+
+      const allLists = await storage.getLists();
+      const listNameToId = Object.fromEntries(
+        allLists.map(list => [list.name.toLowerCase(), list.id])
+      );
+
+      const imported = [];
+      const failed = [];
+
+      for (const record of records) {
+        try {
+          // Parse price - remove currency symbols and convert to cents
+          const priceStr = record.price?.replace(/[^0-9.,]/g, '') || '0';
+          const price = Math.round(parseFloat(priceStr.replace(',', '.')) * 100);
+
+          // Parse lists from comma-separated string
+          const listsStr = record.lists || 'All items';
+          const listNames = listsStr.split(',').map((l: string) => l.trim().toLowerCase());
+          const listIds = listNames
+            .map(name => listNameToId[name])
+            .filter(Boolean);
+
+          if (listIds.length === 0) {
+            // Default to "All Items" if no valid lists found
+            const allItemsList = allLists.find(l => l.name === 'All Items');
+            if (allItemsList) listIds.push(allItemsList.id);
+          }
+
+          // Create item
+          const item = await storage.createItem({
+            name: record.title || 'Untitled Item',
+            url: record.url,
+            shortUrl: record.merchant || new URL(record.url).hostname,
+            images: record.image_url ? [record.image_url] : [],
+            price,
+            currency: record.currency || 'USD',
+            size: record.selected_option,
+            availableSizes: record.selected_option ? [record.selected_option] : [],
+            inStock: record.status !== 'out_of_stock',
+            lists: listIds,
+          });
+
+          imported.push(item);
+        } catch (error) {
+          console.error('Failed to import item:', record, error);
+          failed.push({ url: record.url, error: String(error) });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        imported: imported.length, 
+        failed: failed.length,
+        failedItems: failed
+      });
+    } catch (error) {
+      console.error("Error importing CSV:", error);
+      res.status(500).json({ error: "Failed to import CSV" });
     }
   });
 

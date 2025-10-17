@@ -42,31 +42,34 @@ interface AppSidebarProps {
 }
 
 const getIconForList = (name: string, icon?: string) => {
-  const iconMap: Record<string, any> = {
+  const customIconMap: Record<string, string> = {
+    'Sweaters & Cardigans': '/attached_assets/sweater_1760701841052.png',
+    'Perfumes': '/attached_assets/bottle_1760701841053.png',
+    'Skirts': '/attached_assets/skirt_1760701841053.png',
+    'Shoes': '/attached_assets/high-heels_1760701841053.png',
+    'Shirts and Blouses': '/attached_assets/blouse_1760701841053.png',
+    'Nails': '/attached_assets/nail_1760701841053.png',
+    'Pants': '/attached_assets/trousers_1760701841053.png',
+    'Makeup': '/attached_assets/makeup_1760701841054.png',
+    'Dresses': '/attached_assets/dress_1760701841054.png',
+    'Blazers': '/attached_assets/blazer_1760701841054.png',
+    'Bags': '/attached_assets/handbag_1760701841054.png',
+    'Coats': '/attached_assets/trench-coat_1760701841055.png',
+  };
+
+  const lucideIconMap: Record<string, any> = {
     'All Items': ListTodo,
-    'Skirts': Shirt,
-    'Dresses': Shirt,
-    'Coats': Shirt,
-    'Shoes': ShoppingBag,
     'Electronics': Smartphone,
     'Food': Utensils,
     'House Things': HomeIcon,
     'Extra Stuff': Package,
     'Jewelry': Gem,
     'Tops': Shirt,
-    'Nails': Sparkles,
-    'Makeup': Palette,
-    'Pants': Shirt,
-    'Bags': ShoppingCart,
-    'Blazers': Briefcase,
     'Gym': Dumbbell,
-    'Sweaters & Cardigans': Shirt,
     'Accessories': Watch,
-    'Perfumes': Wind,
-    'Shirts and Blouses': Shirt,
   };
 
-  return iconMap[name] || ListTodo;
+  return { customIcon: customIconMap[name], LucideIcon: lucideIconMap[name] || ListTodo };
 };
 
 export function AppSidebar({ lists, itemCounts, onAddList }: AppSidebarProps) {
@@ -109,7 +112,7 @@ export function AppSidebar({ lists, itemCounts, onAddList }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {lists.map((list) => {
-                const Icon = getIconForList(list.name, list.icon);
+                const { customIcon, LucideIcon } = getIconForList(list.name, list.icon);
                 const count = itemCounts[list.id] || 0;
                 const isActive = location === `/lists/${list.id}`;
 
@@ -117,7 +120,11 @@ export function AppSidebar({ lists, itemCounts, onAddList }: AppSidebarProps) {
                   <SidebarMenuItem key={list.id}>
                     <SidebarMenuButton asChild isActive={isActive} data-testid={`link-list-${list.id}`}>
                       <Link href={`/lists/${list.id}`}>
-                        <Icon className="h-4 w-4" />
+                        {customIcon ? (
+                          <img src={customIcon} alt={list.name} className="h-4 w-4" />
+                        ) : (
+                          <LucideIcon className="h-4 w-4" />
+                        )}
                         <span>{list.name}</span>
                         {count > 0 && (
                           <span className="ml-auto text-xs text-muted-foreground">

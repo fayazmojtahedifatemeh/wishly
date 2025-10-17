@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, ExternalLink, Sparkles } from "lucide-react";
+import { Loader2, ExternalLink, Sparkles, Camera } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -66,6 +67,9 @@ export function AddItemModal({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string>();
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [imageDescription, setImageDescription] = useState<string>("");
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -73,6 +77,38 @@ export function AddItemModal({
       url: "",
     },
   });
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsAnalyzing(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('/api/items/analyze-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to analyze image');
+      
+      const data = await response.json();
+      
+      // Show the description to the user so they can search for it manually
+      setImageDescription(data.description);
+      
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      setImageDescription("Failed to analyze image. Please try again.");
+    } finally {
+      setIsAnalyzing(false);
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
+    }
+  };
 
   const handleFetchProduct = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
@@ -143,13 +179,46 @@ export function AddItemModal({
                   <FormItem>
                     <FormLabel>Product URL</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="https://example.com/product"
-                        {...field}
-                        data-testid="input-product-url"
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="https://example.com/product"
+                          {...field}
+                          data-testid="input-product-url"
+                          className="flex-1"
+                        />
+                        <input
+                          ref={imageInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => imageInputRef.current?.click()}
+                          disabled={isAnalyzing}
+                          title="Search by image"
+                        >
+                          {isAnalyzing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Camera className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
+                    {imageDescription && (
+                      <div className="mt-2 p-3 bg-muted rounded-md">
+                        <p className="text-sm font-medium mb-1">Image Analysis Result:</p>
+                        <p className="text-sm text-muted-foreground">{imageDescription}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Use this description to search for similar products online, then paste the product URL above.
+                        </p>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />
@@ -212,7 +281,7 @@ export function AddItemModal({
               {/* Size Selection */}
               {preview.availableSizes.length > 0 && (
                 <div>
-                  <FormLabel>Size</FormLabel>
+                  <Label>Size</Label>
                   <Select value={selectedSize} onValueChange={setSelectedSize}>
                     <SelectTrigger data-testid="select-size">
                       <SelectValue placeholder="Select size" />
@@ -230,13 +299,13 @@ export function AddItemModal({
 
               {/* List Selection */}
               <div>
-                <FormLabel className="mb-3 flex items-center gap-2">
+                <Label className="mb-3 flex items-center gap-2">
                   Add to Lists
                   <Badge variant="secondary" className="text-xs">
                     <Sparkles className="w-3 h-3 mr-1" />
                     AI Suggested
                   </Badge>
-                </FormLabel>
+                </Label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {lists.map((list) => (
                     <div key={list.id} className="flex items-center space-x-2">
