@@ -1,11 +1,7 @@
-// In file: client/src/App.tsx (REPLACE THE WHOLE FILE - WITH DEBUG LOGS)
-
 import { useState } from "react";
 import { Switch, Route } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-// --- DEBUG: Log queryClient right after import ---
 import { queryClient, apiRequest } from "./lib/queryClient";
-console.log("queryClient at top level:", queryClient); // <-- ADDED DEBUG
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,9 +36,6 @@ function Router() {
 }
 
 function AppContent() {
-  // --- DEBUG: Log queryClient inside the component ---
-  console.log("queryClient inside AppContent:", queryClient); // <-- ADDED DEBUG
-
   const [addItemModalOpen, setAddItemModalOpen] = useState(false);
   const [addListModalOpen, setAddListModalOpen] = useState(false);
   const { toast } = useToast();
@@ -58,12 +51,6 @@ function AppContent() {
   const addItemMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/items", data),
     onSuccess: () => {
-      // --- DEBUG: Log queryClient inside onSuccess ---
-      console.log("queryClient inside addItemMutation.onSuccess:", queryClient); // <-- ADDED DEBUG
-      if (!queryClient) {
-        console.error("queryClient is UNDEFINED here!");
-        return;
-      } // <-- ADDED Check
       queryClient.invalidateQueries({ queryKey: ["/api/items"] });
       queryClient.invalidateQueries({ queryKey: ["/api/activity"] });
       toast({ title: "Item added successfully" });
@@ -80,12 +67,6 @@ function AppContent() {
   const addListMutation = useMutation({
     mutationFn: (name: string) => apiRequest("POST", "/api/lists", { name }),
     onSuccess: () => {
-      // --- DEBUG: Log queryClient inside onSuccess ---
-      console.log("queryClient inside addListMutation.onSuccess:", queryClient); // <-- ADDED DEBUG
-      if (!queryClient) {
-        console.error("queryClient is UNDEFINED here!");
-        return;
-      } // <-- ADDED Check
       queryClient.invalidateQueries({ queryKey: ["/api/lists"] });
       toast({ title: "List created successfully" });
     },
@@ -108,21 +89,10 @@ function AppContent() {
       });
     },
     onSuccess: (data: any) => {
-      // --- DEBUG: Log queryClient inside onSuccess ---
-      console.log(
-        "queryClient inside checkPricesMutation.onSuccess:",
-        queryClient,
-      ); // <-- ADDED DEBUG
-      if (!queryClient) {
-        console.error("queryClient is UNDEFINED here!");
-        return;
-      } // <-- ADDED Check
-
-      console.log("Price check response:", data);
       const successCount = data?.successCount ?? 0;
       const failCount = data?.failCount ?? 0;
 
-      queryClient.invalidateQueries(); // Refresh all app data
+      queryClient.invalidateQueries();
       toast({
         title: "Update Complete!",
         description: `${successCount} items updated, ${failCount} failed.`,
@@ -180,8 +150,10 @@ function AppContent() {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-6">
-            <Router />
+          <main className="flex-1 overflow-auto p-6 bg-gradient-to-br from-background via-background to-muted/20 custom-scrollbar">
+            <div className="max-w-7xl mx-auto">
+              <Router />
+            </div>
           </main>
           <Button
             size="icon"

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "pink" | "blue" | "green" | "orange";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -16,6 +16,8 @@ const ThemeProviderContext = createContext<ThemeProviderState | undefined>(
   undefined
 );
 
+const allThemes: Theme[] = ["light", "dark", "pink", "blue", "green", "orange"];
+
 export function ThemeProvider({
   children,
   defaultTheme = "light",
@@ -26,7 +28,7 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
+    root.classList.remove(...allThemes);
     root.classList.add(theme);
     localStorage.setItem("theme", theme);
   }, [theme]);

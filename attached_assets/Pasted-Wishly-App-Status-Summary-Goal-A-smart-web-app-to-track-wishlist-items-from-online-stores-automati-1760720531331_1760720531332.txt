@@ -1,0 +1,69 @@
+Wishly App Status Summary
+Goal: A smart web app to track wishlist items from online stores, automatically fetch details (price, size, images), monitor price changes, and organize items into lists, with a nice pastel UI.
+
+1. Core Functionality & Scraping
+Desired: Add items via URL, fetch correct name, price (including sale price), currency, all images, all available sizes, and available colors. Automatically update price/stock every 6 hours. Manually update all items or just items in a specific list.
+
+Current Status:
+
+Adding via URL: Works, but relies heavily on the scraper's accuracy.
+
+Scraping (scraper.ts): This is the main problem area.
+
+Startup Crash: 🛑 BLOCKER! There's a persistent syntax error preventing the app from even starting. We've traced it to the helper functions (safeJsonParse, cleanImageUrl, parsePrice) but haven't successfully fixed it yet.
+
+Accuracy Issues (When Running):
+
+Price: Often grabs the original price instead of the sale price (e.g., The Outnet). Price parsing sometimes fails with European commas (e.g., 156,95 becoming 15695).
+
+Currency: Basic detection fails for regional sites (e.g., showing € for a £ price on AYBL UK, or $ for £ on AYBL US).
+
+Sizes: Often misses sizes or grabs incorrect text (e.g., "Add to Cart", "Brown / 00"). Specific rules for each site are needed.
+
+Colors: Logic to find colors is missing for most sites.
+
+Images: Sometimes fetches duplicate images (e.g., AYM Studio) or fails to get any (e.g., Zara).
+
+Failures: Fails completely on some sites (e.g., H&M, Zara) possibly due to timeouts or needing to handle JavaScript loading.
+
+Automatic Updates (Cron Job): Code exists to run every 6 hours using the scraper.
+
+Manual Updates:
+
+"Update All" 🔄 button: Backend code exists, frontend button/logic exists. Was causing a server crash (fixed), but success message (undefined) needs the fix applied/verified in App.tsx.
+
+"Update List" 🔄 button: Backend code exists, frontend button/logic exists on ListPage.tsx. Also had the undefined success message bug (fix needs verification).
+
+Stock Status: Scraper attempts to detect stock. Bug: Updates were incorrectly marking items 'Out of Stock' if any scraping error occurred (fix implemented in routes.ts, needs testing). Frontend correctly shows OOS items greyed out.
+
+2. Adding Items (Other Methods)
+Desired: Import via CSV for bulk adding. Search via uploaded image using AI/Google Lens to find product links.
+
+Current Status:
+
+CSV Import: Backend route exists. Imports data directly from CSV columns (doesn't re-scrape for live data). Frontend button/component (CsvImporter.tsx) exists. Should be functional.
+
+Image Search:
+
+Backend uses Gemini Vision. Was trying to return structured JSON results (unreliable, caused frontend "nothing happens" errors).
+
+Switched backend logic to generate a Google Shopping search URL instead (more reliable).
+
+Frontend (AddItemModal.tsx) updated to open these results in a "Sheet" panel (using <iframe>). Error handling added to show pop-ups if AI fails. Needs testing.
+
+3. Organization & UI
+Desired: Clean sidebar with lists and icons, item cards displaying info correctly, detail modal with price history, edit modal. Correct dark mode icons. Nice price formatting.
+
+Current Status:
+
+Sidebar (AppSidebar.tsx): Structure exists. Bug: Custom PNG icons weren't displaying (likely fixed by moving folder to public/) and don't adapt to dark mode (fix using CSS filter: invert(1) implemented, needs testing).
+
+Item Cards (ItemCard.tsx): Structure exists. Image carousel works. Bug: Price formatting shows unnecessary .00 for whole numbers (fix implemented, needs testing). Displays size badge.
+
+Detail Modal (ItemDetailModal.tsx): Exists, shows basic info. Price history query exists but might not display chart yet. Reverse image search button triggers Google Lens (fixed).
+
+Edit Modal (EditItemModal.tsx): Exists. Bug: Not showing available size options (likely because the scraper isn't providing them correctly). Needs investigation after scraper is fixed.
+
+Activity Feed (ActivityPage.tsx): Basic page exists, fetches recent changes. UI for up/down arrows needs implementation/verification.
+
+Goals (GoalsPage.tsx): Basic page exists, framework for adding/viewing goals is there.
