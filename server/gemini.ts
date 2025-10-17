@@ -18,14 +18,21 @@ export async function findProductsFromImage(imageBuffer: Buffer) {
     throw new Error("GEMINI_API_KEY is not configured. Please add it to enable image search.");
   }
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" }); // Use the correct model name
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
-      Analyze the image and identify the main product.
-      Find 3-5 online shopping links where this exact product or a very similar one can be purchased.
-      Return the result as a valid JSON array of objects. Each object must have these exact keys: "name", "price", and "url".
-      Example format: [{"name": "Green Wool Coat", "price": "$129.99", "url": "https://..."}, {"name": "...", "price": "...", "url": "..."}]
-      Do not include any text or markdown formatting outside of the JSON array. Respond ONLY with the JSON array.
+      Analyze this product image and find 5-8 online shopping links where this exact product or very similar products can be purchased.
+      Focus on finding the actual product from major retailers and shopping sites.
+      
+      Return ONLY a valid JSON array of objects. Each object must have these exact keys: "name", "price", and "url".
+      
+      Example format:
+      [
+        {"name": "Green Wool Coat", "price": "$129.99", "url": "https://example.com/product"},
+        {"name": "Similar Wool Coat", "price": "$149.00", "url": "https://store.com/item"}
+      ]
+      
+      Do not include any text, markdown formatting, or explanations. Respond ONLY with the JSON array.
     `;
 
     const imagePart = {

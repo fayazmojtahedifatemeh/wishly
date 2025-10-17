@@ -214,7 +214,9 @@ export default function ListPage() {
         lists={allLists}
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        onSave={(itemId, data) => updateMutation.mutateAsync({ itemId, data })}
+        onSave={async (itemId, data) => {
+          await updateMutation.mutateAsync({ itemId, data });
+        }}
       />
 
       {/* Google Lens Results Sheet */}

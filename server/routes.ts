@@ -213,46 +213,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let imported = 0;
       let failed = 0;
+      const batchSize = 5;
+      
+      console.log(`[CSV Import] Starting import of ${records.length} items in batches of ${batchSize}`);
 
-      for (const record of records) {
-        try {
-          if (!record.url) {
-            failed++;
-            continue;
-          }
-
-          const product = await scrapeProductFromUrl(record.url);
-          
-          let lists = ["all-items"];
-          if (record.category && record.category.trim()) {
-            const allLists = await storage.getLists();
-            const matchedList = allLists.find(
-              l => l.name.toLowerCase() === record.category!.toLowerCase()
-            );
-            if (matchedList) {
-              lists = [matchedList.id];
+      for (let i = 0; i < records.length; i += batchSize) {
+        const batch = records.slice(i, i + batchSize);
+        console.log(`[CSV Import] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(records.length/batchSize)}`);
+        
+        const batchPromises = batch.map(async (record) => {
+          try {
+            if (!record.url) {
+              return { success: false };
             }
+
+            const product = await scrapeProductFromUrl(record.url);
+            
+            let lists = ["all-items"];
+            if (record.category && record.category.trim()) {
+              const allLists = await storage.getLists();
+              const matchedList = allLists.find(
+                l => l.name.toLowerCase() === record.category!.toLowerCase()
+              );
+              if (matchedList) {
+                lists = [matchedList.id];
+              }
+            }
+
+            await storage.createItem({
+              name: product.name,
+              url: record.url,
+              images: product.images,
+              price: product.price,
+              currency: product.currency,
+              size: record.size,
+              availableSizes: product.availableSizes,
+              inStock: product.inStock,
+              lists,
+            });
+
+            return { success: true };
+          } catch (error) {
+            console.error("Error importing row:", error);
+            return { success: false };
           }
+        });
 
-          await storage.createItem({
-            name: product.name,
-            url: record.url,
-            images: product.images,
-            price: product.price,
-            currency: product.currency,
-            size: record.size,
-            availableSizes: product.availableSizes,
-            inStock: product.inStock,
-            lists,
-          });
-
-          imported++;
-        } catch (error) {
-          console.error("Error importing row:", error);
-          failed++;
-        }
+        const results = await Promise.allSettled(batchPromises);
+        results.forEach(result => {
+          if (result.status === 'fulfilled' && result.value.success) {
+            imported++;
+          } else {
+            failed++;
+          }
+        });
       }
 
+      console.log(`[CSV Import] Complete: ${imported} imported, ${failed} failed`);
       res.json({ imported, failed });
     } catch (error: any) {
       console.error("Error importing CSV:", error);

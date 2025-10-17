@@ -101,31 +101,48 @@ export async function scrapeProductFromUrl(
       currency = "CNY";
     // (Missing HKD detection from original)
 
-    // Extract sizes (original guesses)
+    // Extract sizes with better filtering
     const availableSizes: string[] = [];
+    const invalidSizeTexts = [
+      "select size", "choose size", "pick size", "size guide", 
+      "size chart", "add to cart", "add to bag", "click to enlarge",
+      "view details", "quick view", "buy now", "shop now", "sold out"
+    ];
+    
     $(
-      'select[name*="size"] option, [class*="size"] button, [class*="size"] .option',
+      'select[name*="size"] option, [class*="size"] button, [class*="size"] .option, [data-size]',
     ).each((_, el) => {
-      const sizeText = $(el).text().trim() || $(el).attr("value");
-      // Original filtering might grab unwanted text
+      const sizeText = $(el).text().trim() || $(el).attr("value") || $(el).attr("data-size");
+      const lowerSize = sizeText?.toLowerCase() || "";
+      
       if (
         sizeText &&
-        sizeText !== "Select Size" &&
+        sizeText.length < 15 &&
+        !invalidSizeTexts.some(invalid => lowerSize.includes(invalid)) &&
         !availableSizes.includes(sizeText)
       ) {
         availableSizes.push(sizeText);
       }
     });
 
-    // Extract colors
+    // Extract colors with better filtering
     const availableColors: string[] = [];
+    const invalidColorTexts = [
+      "select color", "choose color", "pick color", "add to cart",
+      "add to bag", "click to enlarge", "view details", "quick view",
+      "buy now", "shop now", "sold out"
+    ];
+    
     $(
-      'select[name*="color"] option, [class*="color"] button, [class*="color"] .option, [data-color]',
+      'select[name*="color"] option, [class*="color"] button, [class*="color"] .option, [data-color], [data-variant]',
     ).each((_, el) => {
       const colorText = $(el).text().trim() || $(el).attr("value") || $(el).attr("data-color");
+      const lowerColor = colorText?.toLowerCase() || "";
+      
       if (
         colorText &&
-        colorText !== "Select Color" &&
+        colorText.length < 30 &&
+        !invalidColorTexts.some(invalid => lowerColor.includes(invalid)) &&
         !availableColors.includes(colorText)
       ) {
         availableColors.push(colorText);
@@ -139,8 +156,22 @@ export async function scrapeProductFromUrl(
       $('[itemprop="description"]').first().text().trim() ||
       "";
 
-    // Determine inStock status (basic check)
-    const inStock = !/out of stock|sold out/i.test(html) && price > 0;
+    // Determine inStock status with better detection
+    const outOfStockPatterns = [
+      /out of stock/i,
+      /sold out/i,
+      /currently unavailable/i,
+      /not available/i,
+      /no longer available/i,
+      /discontinued/i,
+      /"availability":\s*"OutOfStock"/i,
+      /"availability":\s*"SoldOut"/i,
+      /class="[^"]*out-of-stock/i,
+      /class="[^"]*sold-out/i
+    ];
+    
+    const hasOutOfStockIndicator = outOfStockPatterns.some(pattern => pattern.test(html));
+    const inStock = !hasOutOfStockIndicator && price > 0;
 
     return {
       name: name || "Untitled Product",
