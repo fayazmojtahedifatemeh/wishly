@@ -22,7 +22,7 @@ function safeJsonParse(json: string | null): any {
   }
   try {
     // Correct regex for HTML comments
-    const cleanedJson = json.replace(//g, '').trim();
+    const cleanedJson = json.replace(/<!--.*?-->/g, '').trim();
     // Attempt to find JSON structure
     const jsonMatch = cleanedJson.match(/({.*}|\[.*\])/s);
     if (jsonMatch && jsonMatch[0]) {
