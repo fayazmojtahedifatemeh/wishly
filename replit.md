@@ -52,12 +52,37 @@ A comprehensive wishlist application with AI-powered categorization, price track
 - Added price history tracking with 6-hour automated checks via cron job
 - Integrated reverse image search API endpoint
 - Connected all frontend components to backend with proper error handling
+- **October 2025**: Extended theme system with 6 beautiful pastel themes (Light, Dark, Pink, Blue, Green, Orange)
+- **October 2025**: Improved main content area with gradient background and custom styled scrollbar
+- **October 2025**: Added comprehensive clothing category lists (21 categories including Dresses, Tops, Shoes, Accessories, Beauty, etc.)
+
+## Theme System
+The app now supports 6 beautiful themes:
+- **Light**: Default soft purple/lavender pastel theme
+- **Dark**: Dark mode with purple accents
+- **Pink**: Pastel pink color scheme
+- **Blue**: Pastel blue color scheme  
+- **Green**: Pastel green color scheme
+- **Orange**: Pastel orange/peach color scheme
+
+Users can switch themes via the palette icon in the top right corner. Theme preference is saved in localStorage and persists across sessions.
+
+## Default Category Lists
+Pre-configured categories for easy organization:
+- **Clothing**: Dresses, Tops, Shirts and Blouses, Sweaters & Cardigans, Coats, Blazers, Skirts, Pants, Gym
+- **Footwear**: Shoes
+- **Accessories**: Bags, Jewelry, Accessories
+- **Beauty**: Makeup, Nails, Perfumes
+- **Home & Tech**: House Things, Electronics
+- **Food**: Food
+- **Other**: Extra Stuff, All Items
 
 ## Environment Variables
 - `GEMINI_API_KEY`: Google Gemini API key for AI categorization
 
 ## User Preferences
-- Aesthetic pastel color scheme with soft purple/lavender theme
+- Multiple pastel color themes to choose from
 - DM Sans font family for clean, modern typography
 - Smooth animations and hover effects
+- Custom scrollbar with theme-aware styling
 - Mobile-first responsive design
