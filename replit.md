@@ -45,16 +45,20 @@ A comprehensive wishlist application with AI-powered categorization, price track
 ## Recent Changes
 - Initial setup with complete data models for items, lists, goals, and price history
 - Implemented all frontend components with pastel design system
-- Added Gemini AI integration for auto-categorization
+- Added Gemini AI integration for auto-categorization and image search (Google Lens-style)
 - Built sidebar navigation with default categories
 - Created activity feed, item cards, detail modals, and goal tracking
-- Implemented web scraping for product data extraction
+- Implemented web scraping for product data extraction with Puppeteer + Cheerio
 - Added price history tracking with 6-hour automated checks via cron job
-- Integrated reverse image search API endpoint
 - Connected all frontend components to backend with proper error handling
 - **October 2025**: Extended theme system with 6 beautiful pastel themes (Light, Dark, Pink, Blue, Green, Orange)
 - **October 2025**: Improved main content area with gradient background and custom styled scrollbar
 - **October 2025**: Added comprehensive clothing category lists (21 categories including Dresses, Tops, Shoes, Accessories, Beauty, etc.)
+- **October 2025**: Enhanced scraper with Puppeteer support for JavaScript-heavy sites (Zara, H&M, etc.)
+- **October 2025**: Improved size/color extraction with shared cleaning functions and "colour" support for UK sites
+- **October 2025**: Fixed image display to show full images without cropping
+- **October 2025**: Hardened stock detection logic to avoid false "out of stock" statuses
+- **October 2025**: Improved CSV import with batch processing (size 5), detailed error reporting, and failed URL tracking
 
 ## Theme System
 The app now supports 6 beautiful themes:
