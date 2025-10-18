@@ -72,11 +72,11 @@ export function ItemDetailModal({
           <div className="space-y-4">
             {images.length > 0 && (
               <>
-                <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+                <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-muted">
                   <img
                     src={images[currentImageIndex]}
                     alt={item.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                     data-testid="img-detail-main"
                   />
                 </div>

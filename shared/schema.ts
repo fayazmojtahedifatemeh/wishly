@@ -14,6 +14,7 @@ export const items = pgTable("items", {
   currency: text("currency").notNull().default('USD'),
   size: text("size"),
   availableSizes: jsonb("available_sizes").$type<string[]>().default(sql`'[]'::jsonb`),
+  availableColors: jsonb("available_colors").$type<string[]>().default(sql`'[]'::jsonb`),
   inStock: boolean("in_stock").notNull().default(true),
   lists: jsonb("lists").$type<string[]>().notNull().default(sql`'[]'::jsonb`), // array of list IDs
   createdAt: timestamp("created_at").notNull().defaultNow(),

@@ -214,25 +214,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let imported = 0;
       let failed = 0;
+      const failedUrls: string[] = [];
       const batchSize = 5;
       
       console.log(`[CSV Import] Starting import of ${records.length} items in batches of ${batchSize}`);
 
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
-        console.log(`[CSV Import] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(records.length/batchSize)}`);
+        const batchNumber = Math.floor(i/batchSize) + 1;
+        const totalBatches = Math.ceil(records.length/batchSize);
+        console.log(`[CSV Import] Processing batch ${batchNumber}/${totalBatches} (${imported + failed}/${records.length} items processed)`);
         
-        const batchPromises = batch.map(async (record) => {
+        const batchPromises = batch.map(async (record, batchIndex) => {
+          const globalIndex = i + batchIndex;
           try {
             if (!record.url) {
-              return { success: false };
+              console.log(`[CSV Import] Row ${globalIndex + 1}: Skipping - no URL provided`);
+              return { success: false, url: '' };
             }
 
+            console.log(`[CSV Import] Row ${globalIndex + 1}: Scraping ${record.url}`);
             const product = await scrapeProductFromUrl(record.url);
+            
+            if (!product.name || product.name === "Untitled Product") {
+              console.log(`[CSV Import] Row ${globalIndex + 1}: Failed - could not extract product name`);
+              return { success: false, url: record.url };
+            }
+
+            if (product.price === 0) {
+              console.log(`[CSV Import] Row ${globalIndex + 1}: Warning - price is $0, product may be out of stock`);
+            }
             
             let lists = ["all-items"];
             
-            // Try to match category from CSV first
             if (record.category && record.category.trim()) {
               const allLists = await storage.getLists();
               const matchedList = allLists.find(
@@ -240,8 +254,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               );
               if (matchedList) {
                 lists = [matchedList.id];
+                console.log(`[CSV Import] Row ${globalIndex + 1}: Matched category "${record.category}" to list "${matchedList.name}"`);
               } else {
-                // Category specified but no match - try AI categorization
+                console.log(`[CSV Import] Row ${globalIndex + 1}: Category "${record.category}" not found, using AI categorization`);
                 try {
                   const categorization = await categorizeProduct(product.name, product.description);
                   const suggestedLists = allLists
@@ -251,22 +266,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     lists = suggestedLists;
                   }
                 } catch (error) {
-                  console.error("AI categorization failed during CSV import:", error);
+                  console.error(`[CSV Import] Row ${globalIndex + 1}: AI categorization failed, using default list`);
                 }
-              }
-            } else {
-              // No category specified - use AI categorization
-              try {
-                const allLists = await storage.getLists();
-                const categorization = await categorizeProduct(product.name, product.description);
-                const suggestedLists = allLists
-                  .filter(list => categorization.suggestedCategories.includes(list.name))
-                  .map(list => list.id);
-                if (suggestedLists.length > 0) {
-                  lists = suggestedLists;
-                }
-              } catch (error) {
-                console.error("AI categorization failed during CSV import:", error);
               }
             }
 
@@ -278,29 +279,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
               currency: product.currency,
               size: record.size,
               availableSizes: product.availableSizes,
+              availableColors: product.availableColors,
               inStock: product.inStock,
               lists,
             });
 
-            return { success: true };
-          } catch (error) {
-            console.error("Error importing row:", error);
-            return { success: false };
+            console.log(`[CSV Import] Row ${globalIndex + 1}: ✓ Successfully imported "${product.name}"`);
+            return { success: true, url: record.url };
+          } catch (error: any) {
+            console.error(`[CSV Import] Row ${globalIndex + 1}: ✗ Failed -`, error.message);
+            return { success: false, url: record.url || '' };
           }
         });
 
         const results = await Promise.allSettled(batchPromises);
-        results.forEach(result => {
+        results.forEach((result, idx) => {
           if (result.status === 'fulfilled' && result.value.success) {
             imported++;
           } else {
             failed++;
+            if (result.status === 'fulfilled' && result.value.url) {
+              failedUrls.push(result.value.url);
+            }
           }
         });
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       console.log(`[CSV Import] Complete: ${imported} imported, ${failed} failed`);
-      res.json({ imported, failed });
+      if (failedUrls.length > 0) {
+        console.log(`[CSV Import] Failed URLs:`, failedUrls);
+      }
+      res.json({ imported, failed, failedUrls });
     } catch (error: any) {
       console.error("Error importing CSV:", error);
       res.status(500).json({ error: "Failed to import CSV", details: error.message });
