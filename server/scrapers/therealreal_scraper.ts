@@ -3,80 +3,80 @@ import { BaseScraper, PriceInfo, SizeInfo, ColorInfo } from "./base_scraper";
 
 export class TheRealRealScraper extends BaseScraper {
   getName(): string | null {
-    const name = this.getText("h1[data-test='productName']") || 
-                 this.getText("h1.product-title") ||
-                 this.getText("h1");
-    return name;
+    // Your analysis: div.brand > a + div.product-name
+    const brand = this.getText("div.brand > a");
+    const productName = this.getText("div.product-name");
+    if (brand && productName) return `${brand} - ${productName}`;
+    return productName || brand || null;
   }
 
   getPrice(): PriceInfo | null {
-    const priceText = this.getText("span[data-test='productPrice']") ||
-                      this.getText("span.price") ||
-                      this.getText("div.product-price");
+    // Your analysis: div.product-price-info__reduced-price
+    let priceText = this.getText("div.product-price-info__reduced-price");
+    if (!priceText) {
+      // Fallback if not reduced (check for a standard price class)
+      priceText = this.getText("div.product-price-info__price"); // Example fallback selector
+    }
+    // Original price: div.product-price-info__strike-through-price
     return this.parsePriceString(priceText);
   }
 
   getSizes(): SizeInfo[] {
-    const sizes: SizeInfo[] = [];
-    this.$("button[data-test='sizeButton'], .size-selector button").each((i, el) => {
-      const element = this.$(el);
-      const name = element.text().trim();
-      const inStock = !element.hasClass("disabled") && !element.attr("disabled");
-      if (name) {
-        sizes.push({ name, inStock });
-      }
-    });
-    return sizes;
+    // Your analysis: Descriptive only - div.pdp-title__size
+    const sizeText = this.getText("div.pdp-title__size");
+    // Since it's descriptive and only one, assume in stock if product is purchasable
+    // A better check is needed for actual stock status
+    return sizeText ? [{ name: sizeText, inStock: true }] : [];
   }
 
   getColors(): ColorInfo[] {
-    const colors: ColorInfo[] = [];
-    this.$("button[data-test='colorButton'], .color-selector button").each((i, el) => {
-      const element = this.$(el);
-      const name = element.attr("aria-label") || element.attr("title") || element.text().trim();
-      const swatchUrl = element.find("img").attr("src");
-      if (name) {
-        colors.push({ name, swatchUrl });
+    // Your analysis: Descriptive only - dd#pdp-details-Description ul > li containing "Color:"
+    let colorName: string | undefined;
+    this.$("dd#pdp-details-Description ul > li").each((i, el) => {
+      const text = this.$(el).text().trim();
+      if (text.toLowerCase().startsWith("color:")) {
+        colorName = text.replace(/color:/i, "").trim();
+        return false; // Stop searching once found
       }
     });
-    return colors;
+    return colorName ? [{ name: colorName, swatchUrl: undefined }] : [];
   }
 
   getImages(): string[] {
+    // Your analysis: div.main-image figure.image img[data-zoom]
     const images: string[] = [];
-    this.$("img[data-test='productImage'], .product-gallery img, .product-images img").each((i, el) => {
-      const src = this.$(el).attr("src") || this.$(el).attr("data-src");
-      if (src && !src.includes("placeholder")) {
-        images.push(src);
-      }
+    this.$("div.main-image figure.image img[data-zoom]").each((i, el) => {
+      const zoomUrl = this.$(el).attr("data-zoom");
+      if (zoomUrl) images.push(zoomUrl);
     });
-    return images;
+    // Fallback if data-zoom isn't present
+    if (images.length === 0) {
+      this.$("div.main-image figure.image img[src]").each((i, el) => {
+        const src = this.$(el).attr("src");
+        if (src) images.push(src);
+      });
+    }
+    return images.map((src) => this.resolveUrl(src));
   }
 
   getInStock(): boolean {
-    const addToCartButton = this.$("button[data-test='addToBag'], button.add-to-cart, button.add-to-bag");
-    const soldOutText = this.$("div.sold-out, span.sold-out").text().toLowerCase();
-    
-    if (soldOutText.includes("sold out") || soldOutText.includes("unavailable")) {
-      return false;
-    }
-    
-    if (addToCartButton.length > 0 && !addToCartButton.attr("disabled")) {
-      return true;
-    }
-    
-    const sizes = this.getSizes();
-    return sizes.length > 0 && sizes.some((s) => s.inStock);
+    // Check for "Add to Bag" button vs "Sold" or unavailable messages
+    const soldLabel = this.$("div.pdp-title__sold-label").length > 0;
+    const addToBagButton =
+      this.$('button[data-event-action="add to bag"]').length > 0; // Check specific button
+
+    return addToBagButton && !soldLabel;
   }
 
   getDescription(): string | null {
-    let description =
-      this.getAttr('meta[property="og:description"]', "content") ||
-      this.getAttr('meta[name="description"]', "content");
-    
+    // Try the specific description element first
+    let description = this.$("dd#pdp-details-Description").text().trim();
     if (description) return description;
 
-    description = this.$("div[data-test='productDescription'], .product-description, .product-details").text().trim();
+    // Fallback to meta tags
+    description =
+      this.getAttr('meta[property="og:description"]', "content") ||
+      this.getAttr('meta[name="description"]', "content");
     return description || null;
   }
 }
