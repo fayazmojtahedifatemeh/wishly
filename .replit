@@ -6,33 +6,45 @@ expertMode = true
 channel = "stable-25_05"
 
 [workflows]
+# This makes the "Run" button use our "Project" workflow
 runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
+# This is the key: run jobs in parallel
 mode = "parallel"
 author = "agent"
 
+# Task 1: The Web App
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Start application"
 
+# Task 2: The Worker
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start worker"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+# Your original command. This is perfect.
 args = "npm run dev"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Start worker"
+author = "agent"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+# <<<--- THE FIX: Use tsx to run the worker file
+args = "npx tsx ./server/worker.ts"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 37385
-externalPort = 3002
 
 [[ports]]
 localPort = 43851
@@ -42,6 +54,11 @@ externalPort = 3001
 localPort = 45729
 externalPort = 3000
 
+[[ports]]
+localPort = 46075
+externalPort = 3002
+
+# --- Keep your deployment settings ---
 [deployment]
 deploymentTarget = "autoscale"
 run = ["npm", "run", "start"]
