@@ -10,6 +10,7 @@ import { parse } from "csv-parse/sync";
 import puppeteer from "puppeteer-extra"; // <<<--- Need Puppeteer for manual check
 import StealthPlugin from "puppeteer-extra-plugin-stealth"; // <<<--- Need Puppeteer Stealth
 import type { Browser } from "puppeteer"; // <<<--- Type for browser instance
+import { existsSync } from "fs";
 
 // --- Import Schema types ---
 import type {
@@ -41,6 +42,25 @@ const createGoalSchema = z.object({
 const upload = multer({ storage: multer.memoryStorage() });
 puppeteer.use(StealthPlugin()); // Apply stealth plugin
 
+function getChromiumExecutablePath(): string | undefined {
+  const possiblePaths = [
+    "/nix/store/biqk69p9jn429lygshhy0zig86kw8gip-chromium-141.0.7390.73/bin/chromium",
+    "/nix/store/biqk69p9jn429lygshhy0zig86kw8gip-chromium-141.0.7390.73/bin/chromium-browser",
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROME_BIN,
+  ];
+
+  for (const path of possiblePaths) {
+    if (path && existsSync(path)) {
+      console.log(`[Server] Found Chromium executable at: ${path}`);
+      return path;
+    }
+  }
+
+  console.warn("[Server] Could not find Chromium executable, using default");
+  return undefined;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // --- Launch Puppeteer Browser Instance for Manual Checks ---
   // Note: Managing this instance lifecycle correctly is important.
@@ -48,8 +68,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   let browserInstance: Browser | null = null;
   try {
     console.log("[Server] Launching shared Puppeteer browser instance...");
+    const chromiumPath = getChromiumExecutablePath();
     browserInstance = await puppeteer.launch({
       headless: true,
+      executablePath: chromiumPath,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",

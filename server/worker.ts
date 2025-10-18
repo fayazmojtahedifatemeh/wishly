@@ -1,6 +1,7 @@
 // worker.ts
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { existsSync } from "fs";
 
 // --- Import your NEW Router ---
 import { routeAndScrape } from "./scraper";
@@ -16,6 +17,25 @@ import { Item, InsertItem, InsertPriceHistory } from "@shared/schema";
 puppeteer.use(StealthPlugin());
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function getChromiumExecutablePath(): string | undefined {
+  const possiblePaths = [
+    "/nix/store/biqk69p9jn429lygshhy0zig86kw8gip-chromium-141.0.7390.73/bin/chromium",
+    "/nix/store/biqk69p9jn429lygshhy0zig86kw8gip-chromium-141.0.7390.73/bin/chromium-browser",
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROME_BIN,
+  ];
+
+  for (const path of possiblePaths) {
+    if (path && existsSync(path)) {
+      console.log(`[Worker] Found Chromium executable at: ${path}`);
+      return path;
+    }
+  }
+
+  console.warn("[Worker] Could not find Chromium executable, using default");
+  return undefined;
+}
 
 // Helper to get the next item needing scraping using MemStorage
 async function getNextItemToScrape(): Promise<Item | null> {
@@ -96,8 +116,10 @@ async function updateScrapedItem(
 
 async function main() {
     console.log("[Worker] Starting...");
+    const chromiumPath = getChromiumExecutablePath();
     const browser = await puppeteer.launch({
         headless: true,
+        executablePath: chromiumPath,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
