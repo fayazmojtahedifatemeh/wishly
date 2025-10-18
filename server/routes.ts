@@ -44,8 +44,7 @@ puppeteer.use(StealthPlugin()); // Apply stealth plugin
 
 function getChromiumExecutablePath(): string | undefined {
   const possiblePaths = [
-    "/nix/store/biqk69p9jn429lygshhy0zig86kw8gip-chromium-141.0.7390.73/bin/chromium",
-    "/nix/store/biqk69p9jn429lygshhy0zig86kw8gip-chromium-141.0.7390.73/bin/chromium-browser",
+    "/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium",
     process.env.PUPPETEER_EXECUTABLE_PATH,
     process.env.CHROME_BIN,
   ];

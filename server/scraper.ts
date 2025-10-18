@@ -17,6 +17,7 @@ import { CharlesTyrhittScraper } from "./scrapers/charles_tyrhitt_scraper";
 import { TheFoldScraper } from "./scrapers/the_fold_scraper";
 import { RalphLaurenScraper } from "./scrapers/ralph_lauren_scraper";
 import { JCrewScraper } from "./scrapers/jcrew_scraper";
+import { TheRealRealScraper } from "./scrapers/therealreal_scraper";
 import { MaxMaraScraper } from "./scrapers/maxmara_scraper";
 import { YooxScraper } from "./scrapers/yoox_scraper";
 import { FarfetchScraper } from "./scrapers/farfetch_scraper";
@@ -43,6 +44,7 @@ const SCRAPER_REGISTRY: { [domain: string]: any } = {
   "ralphlauren.com": RalphLaurenScraper,
   "ralphlauren.co.uk": RalphLaurenScraper,
   "jcrew.com": JCrewScraper,
+  "therealreal.com": TheRealRealScraper,
   "maxmara.com": MaxMaraScraper,
   "us.maxmara.com": MaxMaraScraper,
   "gb.maxmara.com": MaxMaraScraper,
